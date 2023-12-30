@@ -1,34 +1,41 @@
 #!/usr/bin/env python
 
+import numpy
 import torch
 import torchvision
+from torch.utils.data import DataLoader
+
+from data_transforms import get_image_to_tensor_transform, get_tensor_to_image_transform
+from forward_diffusion import add_noise_to_image
+
 import matplotlib.pyplot as plt
+
+
+BATCH_SIZE = 64
 
 
 def main():
 
     # Get the StanfordCars dataset. As of Dec 30, 2023 the download URL is broken.
     # See https://github.com/pytorch/vision/issues/7545#issuecomment-1631441616 for workaround.
-    data = torchvision.datasets.StanfordCars(root="data", download=True)
+    image_to_tensor = get_image_to_tensor_transform()
+    dataset = torchvision.datasets.StanfordCars(root="data", download=True, transform=image_to_tensor)
+    data_loader = DataLoader(dataset, batch_size=BATCH_SIZE)
+
+    image_data, _ = next(iter(data_loader))
+    noisy_images = add_noise_to_image(image_data[1], num_steps=30)
+
+    show_images(noisy_images)
 
 
-    show_images(data)
-
-
-def linear_beta_schedule(timesteps, start=0.0001, end=0.02):
-    return torch.linspace(start, end, timesteps)
-
-
-def show_images(dataset, num_samples=20, cols=4):
-
+def show_images(images, cols=4):
     plt.figure(figsize=(15, 15))
+    tensor_to_image = get_tensor_to_image_transform()
 
-    for i, img in enumerate(dataset):
-        if i == num_samples:
-            break
-
-        plt.subplot(num_samples // cols + 1, cols, i + 1)
-        plt.imshow(img[0])
+    for i, img in enumerate(images):
+        plt.subplot(images.shape[0] // cols + 1, cols, i + 1)
+        image = tensor_to_image(img)
+        plt.imshow(image)
 
     plt.show()
 
