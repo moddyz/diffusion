@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 
+import os
+import argparse
+
 import numpy
+
+import matplotlib.pyplot as plt
+
 import torch
 import torchvision
 from torch.utils.data import DataLoader
@@ -11,16 +17,60 @@ from diffusion import Diffusion
 from param import HyperParameters
 from model import SimpleUnet
 
-import matplotlib.pyplot as plt
-
 
 def main():
-
-    # Define the hyper parameters.
-    hyper_params = HyperParameters(
-        train_iters=1,
-        batch_size=10,
+    parser = argparse.ArgumentParser(
+        "train.py", description="Launches training for a language model"
     )
+    parser.add_argument(
+        "-s",
+        "--seed",
+        help="Seed value to produce deterministic results.",
+        default=1337,
+        type=int,
+    )
+    parser.add_argument(
+        "-i",
+        "--input-data-path",
+        help="File path to the input text data to train on",
+        default="input.txt",
+        type=str,
+    )
+    parser.add_argument(
+        "-io",
+        "--input-optimizer-path",
+        help="File path to load existing optimizer state for resuming training.",
+        default="",
+        type=str,
+    )
+    parser.add_argument(
+        "-ip",
+        "--input-parameters-path",
+        help="File path to load existing model parameters for resuming training.",
+        default="",
+        type=str,
+    )
+    parser.add_argument(
+        "-oo",
+        "--output-optimizer-path",
+        help="File path to save the trained optimizer.",
+        default="optimizer.pth",
+        type=str,
+    )
+    parser.add_argument(
+        "-op",
+        "--output-parameters-path",
+        help="File path to save the trained parameters.",
+        default="parameters.pth",
+        type=str,
+    )
+
+    args = parser.parse_args()
+
+    hyper_params = HyperParameters()
+
+    # Seed for deterministic results
+    torch.manual_seed(args.seed)
 
     # Get the StanfordCars dataset. As of Dec 30, 2023 the download URL is broken.
     # See https://github.com/pytorch/vision/issues/7545#issuecomment-1631441616 for workaround.
@@ -31,11 +81,24 @@ def main():
     # Instantiate the model.
     model = SimpleUnet()
 
+    # Should we load existing parameters?
+    if args.input_parameters_path:
+        input_parameters = torch.load(args.input_parameters_path)
+        model.load_state_dict(input_parameters)
+
     # Instantiate the model.
     diffusion = Diffusion(hyper_params.num_steps)
 
     # Instantiate the optimizer.
     optimizer = torch.optim.AdamW(model.parameters(), lr=hyper_params.learning_rate)
+
+    # Should we load existing optimizer state?
+    if args.input_optimizer_path:
+        input_optimizer_state = torch.load(args.input_optimizer_path)
+        optimizer.load_state_dict(input_optimizer_state)
+
+    output_parameters_path = os.path.abspath(os.path.normpath(args.output_parameters_path))
+    output_optimizer_path = os.path.abspath(os.path.normpath(args.output_optimizer_path))
 
     print(f"Starting training with {hyper_params}")
 
@@ -71,7 +134,13 @@ def main():
             if epoch % 10 == 0 and batch_index % 10 == 0:
                 print(f"Epoch {epoch} | batch {batch_index}/{len(data_loader)} Loss: {loss.item()} ")
 
-                show_backward_diffusion(hyper_params, model, diffusion)
+                # Train will yield at checkpoints so we can incrementally save state.
+                torch.save(model.state_dict(), output_parameters_path)
+                torch.save(optimizer.state_dict(), output_optimizer_path)
+
+    # Train will yield at checkpoints so we can incrementally save state.
+    torch.save(model.state_dict(), output_parameters_path)
+    torch.save(optimizer.state_dict(), output_optimizer_path)
 
 
 @torch.no_grad()
