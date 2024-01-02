@@ -49,9 +49,11 @@ if __name__ == "__main__":
     # Note: the "noises" variable contains the raw gaussian noise that was used used to apply to the image.
     image_t, noise_t = diffusion.add_noise(image, time_step)
 
-    # Remove noise from them.
-    image_t_minus_one = diffusion.remove_noise(image_t, time_step, noise_t)
-    #image_t_minus_one = torch.clamp(image_t_minus_one, -1.0, 1.0)
+    # Remove noise completely
+    image_0 = diffusion.remove_noise(image_t, time_step, noise_t)
+
+    # Decrement noise by 1.
+    image_t_minus_one = diffusion.decrement_noise(image_t, time_step, noise_t)
 
     # Instantiate tensor to image transform.
     tensor_to_image = get_tensor_to_image_transform(hyper_params.image_size)
@@ -61,21 +63,27 @@ if __name__ == "__main__":
     fig.canvas.manager.set_window_title("Illustration of Diffusion model forward & backward pass")
 
     # Draw original image (T == 0)
-    ax = plt.subplot(1, 3, 1)
+    ax = plt.subplot(1, 4, 1)
     plt.axis("off")
     ax.set_title(f"T = 0/{hyper_params.num_steps} (original image)", loc="center")
     plt.imshow(tensor_to_image(image[0]))
 
-    # Draw the image at T
-    ax = plt.subplot(1, 3, 2)
+    # Draw X_t
+    ax = plt.subplot(1, 4, 2)
     plt.axis("off")
-    ax.set_title(f"T = {time_step.item()}/{hyper_params.num_steps} (noise applied)", loc="center")
+    ax.set_title(f"T = {time_step.item()}/{hyper_params.num_steps} (Diffusion.add_noise)", loc="center")
     plt.imshow(tensor_to_image(torch.clamp(image_t[0], -1.0, 1.0)))
 
-    # Draw the image at T - 1
-    ax = plt.subplot(1, 3, 3)
+    # Draw X_0
+    ax = plt.subplot(1, 4, 3)
     plt.axis("off")
-    ax.set_title(f"T = {time_step.item() - 1}/{hyper_params.num_steps} (one step of noise removed)", loc="center")
+    ax.set_title(f"T = 0/{hyper_params.num_steps} (Diffusion.remove_noise)", loc="center")
+    plt.imshow(tensor_to_image(torch.clamp(image_0[0], -1.0, 1.0)))
+
+    # Draw X_t-1
+    ax = plt.subplot(1, 4, 4)
+    plt.axis("off")
+    ax.set_title(f"T = {time_step.item() - 1}/{hyper_params.num_steps} (Diffusion.decrement_noise)", loc="center")
     plt.imshow(tensor_to_image(torch.clamp(image_t_minus_one[0], -1.0, 1.0)))
 
     plt.show()
