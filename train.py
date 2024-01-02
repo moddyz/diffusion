@@ -5,17 +5,16 @@ import argparse
 
 import numpy
 
-import matplotlib.pyplot as plt
-
 import torch
 import torchvision
 from torch.utils.data import DataLoader
 import torch.nn.functional as F
 
-from data_transforms import get_image_to_tensor_transform, get_tensor_to_image_transform
-from diffusion import Diffusion
-from param import HyperParameters
-from model import SimpleUnet
+from diffusion_from_scratch.data_transforms import get_image_to_tensor_transform
+from diffusion_from_scratch.diffusion import Diffusion
+from diffusion_from_scratch.param import HyperParameters
+from diffusion_from_scratch.model import SimpleUnet
+from diffusion_from_scratch.visualize import show_forward_diffusion, show_backward_diffusion
 
 
 def main():
@@ -67,7 +66,9 @@ def main():
 
     args = parser.parse_args()
 
-    hyper_params = HyperParameters()
+    hyper_params = HyperParameters(
+        batch_size=1,
+    )
 
     # Seed for deterministic results
     torch.manual_seed(args.seed)
@@ -99,8 +100,6 @@ def main():
 
     output_parameters_path = os.path.abspath(os.path.normpath(args.output_parameters_path))
     output_optimizer_path = os.path.abspath(os.path.normpath(args.output_optimizer_path))
-
-    print(f"Starting training with {hyper_params}")
 
     # Begin training.
     for epoch in range(hyper_params.train_iters):
@@ -141,74 +140,6 @@ def main():
     # Train will yield at checkpoints so we can incrementally save state.
     torch.save(model.state_dict(), output_parameters_path)
     torch.save(optimizer.state_dict(), output_optimizer_path)
-
-
-@torch.no_grad()
-def show_backward_diffusion(hyper_params, model, diffusion):
-    # Generate pure noise as a starting point.
-    image = torch.randn((1, 3, *hyper_params.image_size))
-
-    tensor_to_image = get_tensor_to_image_transform(hyper_params.image_size)
-
-    plt.figure(figsize=(15, 15))
-
-    model.eval()
-
-    num_images = 10
-    steps_per_img = hyper_params.num_steps // num_images
-
-    for step in reversed(range(hyper_params.num_steps)):
-
-        time_steps = torch.tensor(step).unsqueeze(0).long()
-        image = diffusion.remove_noise(image, time_steps, model)
-        image = torch.clamp(image, -1.0, 1.0)
-
-        if step % steps_per_img == 0:
-            ax = plt.subplot(1, num_images, (hyper_params.num_steps - step) // steps_per_img)
-            ax.set_title(f"{step}", loc="center")
-            img = tensor_to_image(image[0])
-            plt.imshow(img)
-            plt.axis("off")
-
-    plt.show()
-    model.train()
-
-
-def show_forward_diffusion(original_images, noisy_images, time_steps, hyper_params):
-
-    assert original_images.shape[0] == noisy_images.shape[0]
-
-    num_images = original_images.shape[0]
-
-    # Define a figure
-    plt.figure(figsize=(15, 15))
-
-    # Get the transform converting tensors to images.
-    tensor_to_image = get_tensor_to_image_transform(hyper_params.image_size)
-
-    # We only want to plot num_plot number of images.
-    for i in range(num_images):
-
-        ax = plt.subplot(num_images + 1, 2, i * 2 + 1)
-
-        # Convert tensor to image.
-        img = original_images[i]
-        image = tensor_to_image(img)
-        plt.imshow(image)
-        plt.axis("off")
-
-        # Create a subplot with noise time step as the title.
-        ax = plt.subplot(num_images + 1, 2, i * 2 + 2)
-        ax.set_title(f"{time_steps[i].item()}/{hyper_params.num_steps}", loc="center")
-
-        # Convert tensor to image.
-        img = noisy_images[i]
-        image = tensor_to_image(img)
-        plt.imshow(image)
-        plt.axis("off")
-
-
-    plt.show()
 
 
 if __name__ == "__main__":
