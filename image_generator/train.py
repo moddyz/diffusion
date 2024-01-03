@@ -10,11 +10,14 @@ import torchvision
 from torch.utils.data import DataLoader
 import torch.nn.functional as F
 
-from diffusion_from_scratch.data_transforms import get_image_to_tensor_transform
-from diffusion_from_scratch.diffusion import Diffusion
-from diffusion_from_scratch.param import HyperParameters
-from diffusion_from_scratch.unet import Unet
-from diffusion_from_scratch.visualize import show_forward_diffusion
+import datasets
+
+from data_set import PoloClubDiffusionDBDataSet
+from data_transforms import get_image_to_tensor_transform
+from diffusion import Diffusion
+from param import HyperParameters
+from model import Unet
+from visualize import show_forward_diffusion
 
 
 def main():
@@ -73,18 +76,18 @@ def main():
     # Seed for deterministic results
     torch.manual_seed(args.seed)
 
-    # Get the StanfordCars dataset. As of Dec 30, 2023 the download URL is broken.
-    # See https://github.com/pytorch/vision/issues/7545#issuecomment-1631441616 for workaround.
+    # Grab the data set.
     image_to_tensor = get_image_to_tensor_transform(hyper_params.image_size)
-    dataset = torchvision.datasets.StanfordCars(root="data", download=True, transform=image_to_tensor)
+    train_size = int(0.9 * len(full_dataset))
+    val_size = len(full_dataset) - train_size
+    full_dataset = PoloClubDiffusionDBDataSet(transform=image_to_tensor)
+    train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size])
     data_loader = DataLoader(dataset, batch_size=hyper_params.batch_size, drop_last=True)
 
     # Instantiate the unet
     model = Unet(
-        hyper_params.num_time_steps,
-        hyper_params.time_embed_dim,
-        hyper_params.time_cond_dim,
-        hyper_params.num_time_tokens,
+        num_time_steps=hyper_params.num_time_steps,
+        time_emb_dim=hyper_params.time_embed_dim,
     )
 
     # Should we load existing parameters?

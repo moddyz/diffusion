@@ -41,10 +41,3 @@ class HyperParameters:
 
     """Number of values used to represent a time step embedding."""
     time_embed_dim = 32
-
-    """The dimension of the vector that encodes the time condition"""
-    time_cond_dim = 32
-
-    """Number of time tokens used in the attention layers"""
-    num_time_tokens = 2
-

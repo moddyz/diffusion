@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 
 import torch
 
-from .data_transforms import get_tensor_to_image_transform
+from data_transforms import get_tensor_to_image_transform
 
 
 @torch.no_grad()

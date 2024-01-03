@@ -8,16 +8,17 @@ import torch
 import torchvision
 from torch.utils.data import DataLoader
 
-from diffusion_from_scratch.param import HyperParameters
-from diffusion_from_scratch.data_transforms import (
+from param import HyperParameters
+from data_transforms import (
     get_image_to_tensor_transform,
     get_tensor_to_image_transform,
 )
-from diffusion_from_scratch.visualize import (
+from visualize import (
     show_forward_diffusion,
     show_backward_diffusion_step,
 )
-from diffusion_from_scratch.diffusion import Diffusion
+from diffusion import Diffusion
+from data_set import PoloClubDiffusionDBDataSet
 
 
 if __name__ == "__main__":
@@ -37,7 +38,7 @@ if __name__ == "__main__":
 
     # Load our data.
     image_to_tensor = get_image_to_tensor_transform(hyper_params.image_size)
-    dataset = torchvision.datasets.StanfordCars(root="data", download=True, transform=image_to_tensor)
+    dataset = PoloClubDiffusionDBDataSet(transform=image_to_tensor)
     data_loader = DataLoader(dataset, batch_size=hyper_params.batch_size, drop_last=True)
 
     # Load a single image.
