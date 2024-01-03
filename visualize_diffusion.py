@@ -26,14 +26,14 @@ if __name__ == "__main__":
 
     hyper_params = HyperParameters(
         batch_size=1, # Load only a single image in a batch.
-        num_steps=3,
+        num_time_steps=3,
     )
 
     # Noise at timestep T to apply.
     T = 2
 
     # Instantiate the diffusion model.
-    diffusion = Diffusion(hyper_params.num_steps)
+    diffusion = Diffusion(hyper_params.num_time_steps)
 
     # Load our data.
     image_to_tensor = get_image_to_tensor_transform(hyper_params.image_size)
@@ -65,25 +65,25 @@ if __name__ == "__main__":
     # Draw original image (T == 0)
     ax = plt.subplot(1, 4, 1)
     plt.axis("off")
-    ax.set_title(f"T = 0/{hyper_params.num_steps} (original image)", loc="center")
+    ax.set_title(f"T = 0/{hyper_params.num_time_steps} (original image)", loc="center")
     plt.imshow(tensor_to_image(image[0]))
 
     # Draw X_t
     ax = plt.subplot(1, 4, 2)
     plt.axis("off")
-    ax.set_title(f"T = {time_step.item()}/{hyper_params.num_steps} (Diffusion.add_noise)", loc="center")
+    ax.set_title(f"T = {time_step.item()}/{hyper_params.num_time_steps} (Diffusion.add_noise)", loc="center")
     plt.imshow(tensor_to_image(torch.clamp(image_t[0], -1.0, 1.0)))
 
     # Draw X_0
     ax = plt.subplot(1, 4, 3)
     plt.axis("off")
-    ax.set_title(f"T = 0/{hyper_params.num_steps} (Diffusion.remove_noise)", loc="center")
+    ax.set_title(f"T = 0/{hyper_params.num_time_steps} (Diffusion.remove_noise)", loc="center")
     plt.imshow(tensor_to_image(torch.clamp(image_0[0], -1.0, 1.0)))
 
     # Draw X_t-1
     ax = plt.subplot(1, 4, 4)
     plt.axis("off")
-    ax.set_title(f"T = {time_step.item() - 1}/{hyper_params.num_steps} (Diffusion.decrement_noise)", loc="center")
+    ax.set_title(f"T = {time_step.item() - 1}/{hyper_params.num_time_steps} (Diffusion.decrement_noise)", loc="center")
     plt.imshow(tensor_to_image(torch.clamp(image_t_minus_one[0], -1.0, 1.0)))
 
     plt.show()

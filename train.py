@@ -13,8 +13,8 @@ import torch.nn.functional as F
 from diffusion_from_scratch.data_transforms import get_image_to_tensor_transform
 from diffusion_from_scratch.diffusion import Diffusion
 from diffusion_from_scratch.param import HyperParameters
-from diffusion_from_scratch.model import SimpleUnet
-from diffusion_from_scratch.visualize import show_forward_diffusion, show_backward_diffusion
+from diffusion_from_scratch.unet import Unet
+from diffusion_from_scratch.visualize import show_forward_diffusion
 
 
 def main():
@@ -79,8 +79,13 @@ def main():
     dataset = torchvision.datasets.StanfordCars(root="data", download=True, transform=image_to_tensor)
     data_loader = DataLoader(dataset, batch_size=hyper_params.batch_size, drop_last=True)
 
-    # Instantiate the model.
-    model = SimpleUnet()
+    # Instantiate the unet
+    model = Unet(
+        hyper_params.num_time_steps,
+        hyper_params.time_embed_dim,
+        hyper_params.time_cond_dim,
+        hyper_params.num_time_tokens,
+    )
 
     # Should we load existing parameters?
     if args.input_parameters_path:
@@ -88,7 +93,7 @@ def main():
         model.load_state_dict(input_parameters)
 
     # Instantiate the model.
-    diffusion = Diffusion(hyper_params.num_steps)
+    diffusion = Diffusion(hyper_params.num_time_steps)
 
     # Instantiate the optimizer.
     optimizer = torch.optim.AdamW(model.parameters(), lr=hyper_params.learning_rate)
@@ -110,7 +115,7 @@ def main():
             images, _ = batch
 
             # Apply noise to images.
-            time_steps = torch.randint(0, hyper_params.num_steps, (hyper_params.batch_size,)).long()
+            time_steps = torch.randint(0, hyper_params.num_time_steps, (hyper_params.batch_size,)).long()
             noisy_images, noises = diffusion.add_noise(images, time_steps)
 
             #show_forward_diffusion(images, noisy_images, time_steps, hyper_params)

@@ -26,9 +26,6 @@ class HyperParameters:
     """Number of images processed in parallel"""
     batch_size: int = 64
 
-    """Total number of diffusion time steps"""
-    num_steps: int = 100
-
     """Number of iterations to train the model."""
     train_iters: int = 5000
 
@@ -37,3 +34,17 @@ class HyperParameters:
 
     """The learning rate"""
     learning_rate: float = 3e-4
+
+    """Total number of time steps for the diffusion process,
+    which takes an input image all the way to pure gaussian noise."""
+    num_time_steps: int = 100
+
+    """Number of values used to represent a time step embedding."""
+    time_embed_dim = 32
+
+    """The dimension of the vector that encodes the time condition"""
+    time_cond_dim = 32
+
+    """Number of time tokens used in the attention layers"""
+    num_time_tokens = 2
+
