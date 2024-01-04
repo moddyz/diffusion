@@ -1,4 +1,4 @@
-name: diffusion_from_scratch
+name: diffusion_pytorch
 channels:
   - pytorch
   - defaults
