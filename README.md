@@ -1,7 +1,9 @@
-# diffusion
+# diffusion_pytorch
 
-Code following the Youtube tutorial "Diffusion models from scratch in Pytorch" by DeepFindr:
-https://www.youtube.com/watch?v=a4Yfz2FxXiY&ab_channel=DeepFindr
+Experimentation with Diffusion based neural networks referencing various online resources such as:
+- https://www.youtube.com/watch?v=a4Yfz2FxXiY&ab_channel=DeepFindr
+- https://www.assemblyai.com/blog/minimagen-build-your-own-imagen-text-to-image-model/
+- and a lot of help from ChatGPT!
 
 # Usage
 
@@ -10,12 +12,12 @@ https://www.youtube.com/watch?v=a4Yfz2FxXiY&ab_channel=DeepFindr
 1. [Install Miniconda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html)
 2. Clone project & create conda environment:
 ```conda
-git clone https://github.com/moddyz/diffusion.git
-cd diffusion
+git clone https://github.com/moddyz/diffusion_pytorch.git
+cd diffusion_pytorch
 conda env create -f environment.yml
 conda activate diffusion_pytorch
 ```
 
 ## Execute training
 
-...
+
