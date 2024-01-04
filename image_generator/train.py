@@ -7,7 +7,7 @@ import numpy
 
 import torch
 import torchvision
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, random_split
 import torch.nn.functional as F
 
 import datasets
@@ -76,13 +76,15 @@ def main():
     # Seed for deterministic results
     torch.manual_seed(args.seed)
 
-    # Grab the data set.
+    # Prepare the dataset.
     image_to_tensor = get_image_to_tensor_transform(hyper_params.image_size)
+    full_dataset = PoloClubDiffusionDBDataSet(transform=image_to_tensor)
     train_size = int(0.9 * len(full_dataset))
     val_size = len(full_dataset) - train_size
-    full_dataset = PoloClubDiffusionDBDataSet(transform=image_to_tensor)
     train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size])
-    data_loader = DataLoader(dataset, batch_size=hyper_params.batch_size, drop_last=True)
+    data_loader = DataLoader(
+        train_dataset, batch_size=hyper_params.batch_size, drop_last=True
+    )
 
     # Instantiate the unet
     model = Unet(
@@ -106,22 +108,26 @@ def main():
         input_optimizer_state = torch.load(args.input_optimizer_path)
         optimizer.load_state_dict(input_optimizer_state)
 
-    output_parameters_path = os.path.abspath(os.path.normpath(args.output_parameters_path))
-    output_optimizer_path = os.path.abspath(os.path.normpath(args.output_optimizer_path))
+    output_parameters_path = os.path.abspath(
+        os.path.normpath(args.output_parameters_path)
+    )
+    output_optimizer_path = os.path.abspath(
+        os.path.normpath(args.output_optimizer_path)
+    )
 
     # Begin training.
     for epoch in range(hyper_params.train_iters):
-
         for batch_index, batch in enumerate(data_loader):
-
             # Get input image data.
             images, _ = batch
 
             # Apply noise to images.
-            time_steps = torch.randint(0, hyper_params.num_time_steps, (hyper_params.batch_size,)).long()
+            time_steps = torch.randint(
+                0, hyper_params.num_time_steps, (hyper_params.batch_size,)
+            ).long()
             noisy_images, noises = diffusion.add_noise(images, time_steps)
 
-            #show_forward_diffusion(images, noisy_images, time_steps, hyper_params)
+            # show_forward_diffusion(images, noisy_images, time_steps, hyper_params)
 
             # Compute noise prediction from noisey images.
             noise_pred = model(noisy_images, time_steps)
@@ -139,7 +145,9 @@ def main():
             optimizer.step()
 
             if epoch % 10 == 0 and batch_index % 10 == 0:
-                print(f"Epoch {epoch} | batch {batch_index}/{len(data_loader)} Loss: {loss.item()} ")
+                print(
+                    f"Epoch {epoch} | batch {batch_index}/{len(data_loader)} Loss: {loss.item()} "
+                )
 
                 # Train will yield at checkpoints so we can incrementally save state.
                 torch.save(model.state_dict(), output_parameters_path)

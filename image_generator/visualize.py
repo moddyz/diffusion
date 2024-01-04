@@ -20,13 +20,14 @@ def show_backward_diffusion_with_model(hyper_params, model, diffusion):
     steps_per_img = hyper_params.num_steps // num_plot
 
     for step in reversed(range(hyper_params.num_steps)):
-
         time_steps = torch.tensor(step).unsqueeze(0).long()
         image = diffusion.remove_noise_with_model(image, time_steps, model)
         image = torch.clamp(image, -1.0, 1.0)
 
         if step % steps_per_img == 0:
-            ax = plt.subplot(1, num_plot, (hyper_params.num_steps - step) // steps_per_img)
+            ax = plt.subplot(
+                1, num_plot, (hyper_params.num_steps - step) // steps_per_img
+            )
             ax.set_title(f"{step}", loc="center")
             img = tensor_to_image(image[0])
             plt.imshow(img)
@@ -65,7 +66,6 @@ def show_backward_diffusion_step(image_t, time_step, noise, diffusion, hyper_par
 
 @torch.no_grad()
 def show_forward_diffusion(original_images, noisy_images, time_steps, hyper_params):
-
     assert original_images.shape[0] == noisy_images.shape[0]
 
     num_images = original_images.shape[0]
@@ -78,7 +78,6 @@ def show_forward_diffusion(original_images, noisy_images, time_steps, hyper_para
 
     # We only want to plot num_plot number of images.
     for i in range(num_images):
-
         ax = plt.subplot(num_images + 1, 2, i * 2 + 1)
 
         # Convert tensor to image.

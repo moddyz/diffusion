@@ -22,11 +22,10 @@ from data_set import PoloClubDiffusionDBDataSet
 
 
 if __name__ == "__main__":
-
     torch.manual_seed(1337)
 
     hyper_params = HyperParameters(
-        batch_size=1, # Load only a single image in a batch.
+        batch_size=1,  # Load only a single image in a batch.
         num_time_steps=3,
     )
 
@@ -39,7 +38,9 @@ if __name__ == "__main__":
     # Load our data.
     image_to_tensor = get_image_to_tensor_transform(hyper_params.image_size)
     dataset = PoloClubDiffusionDBDataSet(transform=image_to_tensor)
-    data_loader = DataLoader(dataset, batch_size=hyper_params.batch_size, drop_last=True)
+    data_loader = DataLoader(
+        dataset, batch_size=hyper_params.batch_size, drop_last=True
+    )
 
     # Load a single image.
     image, _ = next(iter(data_loader))
@@ -61,7 +62,9 @@ if __name__ == "__main__":
 
     # Create the plot.
     fig = plt.figure(figsize=(15, 5))
-    fig.canvas.manager.set_window_title("Illustration of Diffusion model forward & backward pass")
+    fig.canvas.manager.set_window_title(
+        "Illustration of Diffusion model forward & backward pass"
+    )
 
     # Draw original image (T == 0)
     ax = plt.subplot(1, 4, 1)
@@ -72,19 +75,27 @@ if __name__ == "__main__":
     # Draw X_t
     ax = plt.subplot(1, 4, 2)
     plt.axis("off")
-    ax.set_title(f"T = {time_step.item()}/{hyper_params.num_time_steps} (Diffusion.add_noise)", loc="center")
+    ax.set_title(
+        f"T = {time_step.item()}/{hyper_params.num_time_steps} (Diffusion.add_noise)",
+        loc="center",
+    )
     plt.imshow(tensor_to_image(torch.clamp(image_t[0], -1.0, 1.0)))
 
     # Draw X_0
     ax = plt.subplot(1, 4, 3)
     plt.axis("off")
-    ax.set_title(f"T = 0/{hyper_params.num_time_steps} (Diffusion.remove_noise)", loc="center")
+    ax.set_title(
+        f"T = 0/{hyper_params.num_time_steps} (Diffusion.remove_noise)", loc="center"
+    )
     plt.imshow(tensor_to_image(torch.clamp(image_0[0], -1.0, 1.0)))
 
     # Draw X_t-1
     ax = plt.subplot(1, 4, 4)
     plt.axis("off")
-    ax.set_title(f"T = {time_step.item() - 1}/{hyper_params.num_time_steps} (Diffusion.decrement_noise)", loc="center")
+    ax.set_title(
+        f"T = {time_step.item() - 1}/{hyper_params.num_time_steps} (Diffusion.decrement_noise)",
+        loc="center",
+    )
     plt.imshow(tensor_to_image(torch.clamp(image_t_minus_one[0], -1.0, 1.0)))
 
     plt.show()
