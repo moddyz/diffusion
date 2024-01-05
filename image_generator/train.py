@@ -10,8 +10,6 @@ import torchvision
 from torch.utils.data import DataLoader, random_split
 import torch.nn.functional as F
 
-import datasets
-
 from data_set import PoloClubDiffusionDBDataSet
 from data_transforms import get_image_to_tensor_transform
 from diffusion import Diffusion
@@ -32,24 +30,17 @@ def main():
         type=int,
     )
     parser.add_argument(
-        "-i",
-        "--input-data-path",
-        help="File path to the input text data to train on",
-        default="input.txt",
-        type=str,
-    )
-    parser.add_argument(
         "-io",
         "--input-optimizer-path",
         help="File path to load existing optimizer state for resuming training.",
-        default="",
+        default="optimizer.pth",
         type=str,
     )
     parser.add_argument(
         "-ip",
         "--input-parameters-path",
         help="File path to load existing model parameters for resuming training.",
-        default="",
+        default="parameters.pth",
         type=str,
     )
     parser.add_argument(
@@ -69,9 +60,7 @@ def main():
 
     args = parser.parse_args()
 
-    hyper_params = HyperParameters(
-        batch_size=1,
-    )
+    hyper_params = HyperParameters()
 
     # Seed for deterministic results
     torch.manual_seed(args.seed)
@@ -83,7 +72,7 @@ def main():
     val_size = len(full_dataset) - train_size
     train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size])
     data_loader = DataLoader(
-        train_dataset, batch_size=hyper_params.batch_size, drop_last=True
+        train_dataset, batch_size=hyper_params.batch_size, shuffle=True, drop_last=True,
     )
 
     # Instantiate the unet
@@ -94,8 +83,12 @@ def main():
 
     # Should we load existing parameters?
     if args.input_parameters_path:
-        input_parameters = torch.load(args.input_parameters_path)
-        model.load_state_dict(input_parameters)
+        try:
+            input_parameters = torch.load(args.input_parameters_path)
+        except FileNotFoundError as e:
+            print(f"Could not load {args.input_parameters_path}, skipping.")
+        else:
+            model.load_state_dict(input_parameters)
 
     # Instantiate the model.
     diffusion = Diffusion(hyper_params.num_time_steps)
@@ -105,8 +98,12 @@ def main():
 
     # Should we load existing optimizer state?
     if args.input_optimizer_path:
-        input_optimizer_state = torch.load(args.input_optimizer_path)
-        optimizer.load_state_dict(input_optimizer_state)
+        try:
+            input_optimizer_state = torch.load(args.input_optimizer_path)
+        except FileNotFoundError as e:
+            print(f"Could not load {args.input_optimizer_path}, skipping.")
+        else:
+            optimizer.load_state_dict(input_optimizer_state)
 
     output_parameters_path = os.path.abspath(
         os.path.normpath(args.output_parameters_path)
