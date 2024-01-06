@@ -26,7 +26,7 @@ def get_tensor_to_image_transform(size):
             transforms.Lambda(
                 lambda t: t.permute(1, 2, 0)
             ),  # Chan, Height, Width to Height, Width, Channel
-            transforms.Lambda(lambda t: t.numpy().astype(numpy.uint8)),
+            transforms.Lambda(lambda t: t.cpu().numpy().astype(numpy.uint8)),
             transforms.ToPILImage(),
         ]
     )

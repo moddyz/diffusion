@@ -13,9 +13,8 @@ import torch.nn.functional as F
 from data_set import PoloClubDiffusionDBDataSet
 from data_transforms import get_image_to_tensor_transform
 from diffusion import Diffusion
+from unet import Unet
 from param import HyperParameters
-from model import Unet
-from visualize import show_forward_diffusion
 
 
 def main():
@@ -27,6 +26,13 @@ def main():
         "--seed",
         help="Seed value to produce deterministic results.",
         default=1337,
+        type=int,
+    )
+    parser.add_argument(
+        "-b",
+        "--batch-size",
+        help="Batch size for training.",
+        default=64,
         type=int,
     )
     parser.add_argument(
@@ -60,7 +66,10 @@ def main():
 
     args = parser.parse_args()
 
-    hyper_params = HyperParameters()
+    hyper_params = HyperParameters(
+        batch_size=args.batch_size,
+    )
+    print(f"Starting training with {hyper_params}")
 
     # Seed for deterministic results
     torch.manual_seed(args.seed)
@@ -76,10 +85,11 @@ def main():
     )
 
     # Instantiate the unet
-    model = Unet(
+    unet = Unet(
         num_time_steps=hyper_params.num_time_steps,
         time_emb_dim=hyper_params.time_embed_dim,
     )
+    unet.to(hyper_params.device)
 
     # Should we load existing parameters?
     if args.input_parameters_path:
@@ -88,10 +98,10 @@ def main():
         except FileNotFoundError as e:
             print(f"Could not load {args.input_parameters_path}, skipping.")
         else:
-            model.load_state_dict(input_parameters)
+            unet.load_state_dict(input_parameters)
 
     # Instantiate the model.
-    diffusion = Diffusion(hyper_params.num_time_steps)
+    diffusion = Diffusion(hyper_params.num_time_steps).to(hyper_params.device)
 
     # Instantiate the optimizer.
     optimizer = torch.optim.AdamW(model.parameters(), lr=hyper_params.learning_rate)
@@ -118,13 +128,16 @@ def main():
             # Get input image data.
             images, _ = batch
 
-            # Apply noise to images.
+            # Upload our image(s) to the right device.
+            images = images.to(hyper_params.device)
+
+            # Generate random noise time steps for each image.
             time_steps = torch.randint(
                 0, hyper_params.num_time_steps, (hyper_params.batch_size,)
-            ).long()
-            noisy_images, noises = diffusion.add_noise(images, time_steps)
+            ).long().to(hyper_params.device)
 
-            # show_forward_diffusion(images, noisy_images, time_steps, hyper_params)
+            # Apply noise to images.
+            noisy_images, noises = diffusion.add_noise(images, time_steps)
 
             # Compute noise prediction from noisey images.
             noise_pred = model(noisy_images, time_steps)

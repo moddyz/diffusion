@@ -41,3 +41,6 @@ class HyperParameters:
 
     """Number of values used to represent a time step embedding."""
     time_embed_dim = 32
+
+    """Device to use."""
+    device = get_optimal_device()
