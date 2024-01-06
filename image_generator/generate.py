@@ -64,30 +64,32 @@ def main():
 
     num_images = args.num_images
 
-    for image_idx in range(num_images):
+    # Generate pure noise as a starting point.
+    image = torch.randn((num_images, 3, *hyper_params.image_size)).to(hyper_params.device)
 
-        # Generate pure noise as a starting point.
-        image = torch.randn((1, 3, *hyper_params.image_size)).to(hyper_params.device)
+    # Transform object to convert our tensor to image representation.
+    tensor_to_image = get_tensor_to_image_transform(hyper_params.image_size)
 
-        # Transform object to convert our tensor to image representation.
-        tensor_to_image = get_tensor_to_image_transform(hyper_params.image_size)
+    # We would like to plot the progression of pure noise into our final image.
+    num_plot = 10
+    steps_per_img = hyper_params.num_time_steps // num_plot
 
-        # We would like to plot the progression of pure noise into our final image.
-        num_plot = 10
-        steps_per_img = hyper_params.num_time_steps // num_plot
+    # Start at the last time step and work backwards.
+    for step in reversed(range(hyper_params.num_time_steps)):
 
-        # Start at the last time step and work backwards.
-        for step in reversed(range(hyper_params.num_time_steps)):
+        time_step = torch.tensor([step] * num_images).long().to(hyper_params.device)
 
-            time_step = torch.tensor(step).unsqueeze(0).long().to(hyper_params.device)
+        # Predict the noise pattern in the image.
+        noise_pred = unet(image, time_step)
 
-            # Predict the noise pattern in the image.
-            noise_pred = unet(image, time_step)
+        # Decrement the noise from the image (to its T - 1 time step)
+        image = diffusion.decrement_noise(image, time_step, noise_pred)
 
-            # Decrement the noise from the image (to its T - 1 time step)
-            image = diffusion.decrement_noise(image, time_step, noise_pred)
+        if step % steps_per_img == 0:
 
-            if step % steps_per_img == 0:
+            imgs = torch.clamp(image, -1.0, 1.0)
+
+            for image_idx, img in enumerate(imgs):
                 print(f"Generating image {image_idx + 1}/{num_images}, step {step}/{hyper_params.num_time_steps}")
 
                 # Plot the image
@@ -97,8 +99,7 @@ def main():
                 ax.set_title(f"T = {step}", loc="center")
 
                 # Clamp to visual range.
-                img = torch.clamp(image, -1.0, 1.0)
-                img = tensor_to_image(img[0])
+                img = tensor_to_image(img)
                 plt.imshow(img)
 
                 plt.axis("off")
