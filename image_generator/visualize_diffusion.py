@@ -8,6 +8,8 @@ import torch
 import torchvision
 from torch.utils.data import DataLoader
 
+import datasets
+
 from param import HyperParameters
 from data_transforms import (
     get_image_to_tensor_transform,
@@ -18,7 +20,7 @@ from visualize import (
     show_backward_diffusion_step,
 )
 from diffusion import Diffusion
-from data_set import PoloClubDiffusionDBDataSet
+from data_set import HuggingFaceImageDataSet
 
 
 if __name__ == "__main__":
@@ -37,25 +39,25 @@ if __name__ == "__main__":
 
     # Load our data.
     image_to_tensor = get_image_to_tensor_transform(hyper_params.image_size)
-    dataset = PoloClubDiffusionDBDataSet(transform=image_to_tensor)
+    hf_dataset = datasets.load_dataset("HK83/Anime_Faces")["train"]
+    dataset = HuggingFaceImageDataSet(hf_dataset, transform=image_to_tensor)
     data_loader = DataLoader(
         dataset, batch_size=hyper_params.batch_size, drop_last=True
     )
 
     # Load a single image.
-    image, _ = next(iter(data_loader))
+    image = next(iter(data_loader))
 
     # Apply noise to the image using the middle value of the noise schedule.
+    # Note: the "noise" variable contains the raw gaussian noise that was used used to apply to the image.
     time_step = torch.tensor((T,)).long().reshape(1, 1)
-
-    # Note: the "noises" variable contains the raw gaussian noise that was used used to apply to the image.
-    image_t, noise_t = diffusion.add_noise(image, time_step)
+    image_t, noise = diffusion.add_noise(image, time_step)
 
     # Remove noise completely
-    image_0 = diffusion.remove_noise(image_t, time_step, noise_t)
+    image_0 = diffusion.remove_noise(image_t, time_step, noise)
 
     # Decrement noise by 1.
-    image_t_minus_one = diffusion.decrement_noise(image_t, time_step, noise_t)
+    image_t_minus_one = diffusion.decrement_noise(image_t, time_step, noise)
 
     # Instantiate tensor to image transform.
     tensor_to_image = get_tensor_to_image_transform(hyper_params.image_size)

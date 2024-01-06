@@ -67,25 +67,27 @@ class UnetBlock(nn.Module):
         if up:
             # During up sampling, we will concactenate input data from its symmetrical down sampling layer,
             # Hence the * 2 in input channels.
+            norm = nn.BatchNorm2d(in_image_channels * 2)
             conv = nn.Conv2d(
                 in_image_channels * 2, out_image_channels, kernel_size, padding=1
             )
         else:
+            norm = nn.BatchNorm2d(in_image_channels)
             conv = nn.Conv2d(
                 in_image_channels, out_image_channels, kernel_size, padding=1
             )
 
         self._conv1 = nn.Sequential(
-            conv,
-            nn.BatchNorm2d(out_image_channels),
+            norm,
             nn.ReLU(),
+            conv,
         )
 
         # Second convolution layer
         self._conv2 = nn.Sequential(
-            nn.Conv2d(out_image_channels, out_image_channels, kernel_size, padding=1),
             nn.BatchNorm2d(out_image_channels),
             nn.ReLU(),
+            nn.Conv2d(out_image_channels, out_image_channels, kernel_size, padding=1),
         )
 
         # Final transform

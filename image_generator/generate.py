@@ -14,13 +14,20 @@ from data_transforms import get_tensor_to_image_transform
 
 def main():
     parser = argparse.ArgumentParser(
-        "generate.py", description="Generates an image from the model."
+        "generate.py", description="Generates image(s) from the model."
     )
     parser.add_argument(
         "-s",
         "--seed",
         help="Seed value to produce deterministic results.",
         default=1337,
+        type=int,
+    )
+    parser.add_argument(
+        "-n",
+        "--num-images",
+        help="Number of images to generate.",
+        default=1,
         type=int,
     )
     parser.add_argument(
@@ -32,7 +39,6 @@ def main():
     )
 
     args = parser.parse_args()
-
 
     # Seed for deterministic results
     torch.manual_seed(args.seed)
@@ -54,40 +60,48 @@ def main():
     diffusion = Diffusion(hyper_params.num_time_steps).to(hyper_params.device)
     diffusion.eval()
 
-    # Generate pure noise as a starting point.
-    image = torch.randn((1, 3, *hyper_params.image_size)).to(hyper_params.device)
-
-    # Transform object to convert our tensor to image representation.
-    tensor_to_image = get_tensor_to_image_transform(hyper_params.image_size)
-
-    # We would like to plot the progression of pure noise into our final image.
     plt.figure(figsize=(15, 15))
-    num_plot = 10
-    steps_per_img = hyper_params.num_time_steps // num_plot
 
-    # Start at the last time step and work backwards.
-    for step in reversed(range(hyper_params.num_time_steps)):
+    num_images = args.num_images
 
-        time_step = torch.tensor(step).unsqueeze(0).long().to(hyper_params.device)
+    for image_idx in range(num_images):
 
-        # Predict the noise pattern in the image.
-        noise_pred = unet(image, time_step)
+        # Generate pure noise as a starting point.
+        image = torch.randn((1, 3, *hyper_params.image_size)).to(hyper_params.device)
 
-        # Decrement the noise from the image (to its T - 1 time step)
-        image = diffusion.decrement_noise(image, time_step, noise_pred)
+        # Transform object to convert our tensor to image representation.
+        tensor_to_image = get_tensor_to_image_transform(hyper_params.image_size)
 
-        # Clamp to visual range.
-        image = torch.clamp(image, -1.0, 1.0)
+        # We would like to plot the progression of pure noise into our final image.
+        num_plot = 10
+        steps_per_img = hyper_params.num_time_steps // num_plot
 
-        if step % steps_per_img == 0:
-            # Plot the image
-            ax = plt.subplot(
-                1, num_plot, (hyper_params.num_time_steps - step) // steps_per_img
-            )
-            ax.set_title(f"T = {step}", loc="center")
-            img = tensor_to_image(image[0])
-            plt.imshow(img)
-            plt.axis("off")
+        # Start at the last time step and work backwards.
+        for step in reversed(range(hyper_params.num_time_steps)):
+
+            time_step = torch.tensor(step).unsqueeze(0).long().to(hyper_params.device)
+
+            # Predict the noise pattern in the image.
+            noise_pred = unet(image, time_step)
+
+            # Decrement the noise from the image (to its T - 1 time step)
+            image = diffusion.decrement_noise(image, time_step, noise_pred)
+
+            if step % steps_per_img == 0:
+                print(f"Generating image {image_idx + 1}/{num_images}, step {step}/{hyper_params.num_time_steps}")
+
+                # Plot the image
+                ax = plt.subplot(
+                    num_images, num_plot, image_idx * num_plot + (hyper_params.num_time_steps - step) // steps_per_img
+                )
+                ax.set_title(f"T = {step}", loc="center")
+
+                # Clamp to visual range.
+                img = torch.clamp(image, -1.0, 1.0)
+                img = tensor_to_image(img[0])
+                plt.imshow(img)
+
+                plt.axis("off")
 
     plt.show()
 

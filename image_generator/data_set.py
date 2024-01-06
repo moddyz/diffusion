@@ -26,4 +26,4 @@ class HuggingFaceImageDataSet(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         item = self._hf_dataset[idx]
         image = self._transform(item["image"])
-        return image, item["label"]
+        return image

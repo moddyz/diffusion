@@ -78,7 +78,7 @@ def main():
 
     # Load the data set from Hugging faces and pass into our torch dataset wrapper.
     image_to_tensor = get_image_to_tensor_transform(hyper_params.image_size)
-    hf_dataset = datasets.load_dataset("huggan/cats")["train"]
+    hf_dataset = datasets.load_dataset("HK83/Anime_Faces")["train"]
     full_dataset = HuggingFaceImageDataSet(hf_dataset, transform=image_to_tensor)
 
     # Split the data set into training and validation
@@ -132,9 +132,7 @@ def main():
 
     # Begin training.
     for epoch in range(hyper_params.train_iters):
-        for batch_index, batch in enumerate(data_loader):
-            # Get input image data.
-            images, _ = batch
+        for batch_index, images in enumerate(data_loader):
 
             # Upload our image(s) to the right device.
             images = images.to(hyper_params.device)

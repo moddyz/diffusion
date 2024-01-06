@@ -27,7 +27,7 @@ class HyperParameters:
     batch_size: int = 64
 
     """Number of iterations to train the model."""
-    train_iters: int = 5000
+    train_iters: int = 100
 
     """Image size"""
     image_size: Tuple[int, int] = (64, 64)
@@ -37,7 +37,7 @@ class HyperParameters:
 
     """Total number of time steps for the diffusion process,
     which takes an input image all the way to pure gaussian noise."""
-    num_time_steps: int = 100
+    num_time_steps: int = 1000
 
     """Number of values used to represent a time step embedding."""
     time_embed_dim = 32
