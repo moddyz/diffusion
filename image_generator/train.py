@@ -10,7 +10,9 @@ import torchvision
 from torch.utils.data import DataLoader, random_split
 import torch.nn.functional as F
 
-from data_set import PoloClubDiffusionDBDataSet
+import datasets
+
+from data_set import HuggingFaceImageDataSet
 from data_transforms import get_image_to_tensor_transform
 from diffusion import Diffusion
 from unet import Unet
@@ -74,17 +76,17 @@ def main():
     # Seed for deterministic results
     torch.manual_seed(args.seed)
 
-    # Prepare the dataset.
+    # Load the data set from Hugging faces and pass into our torch dataset wrapper.
     image_to_tensor = get_image_to_tensor_transform(hyper_params.image_size)
-    full_dataset = PoloClubDiffusionDBDataSet(transform=image_to_tensor)
+    hf_dataset = datasets.load_dataset("huggan/cats")["train"]
+    full_dataset = HuggingFaceImageDataSet(hf_dataset, transform=image_to_tensor)
+
+    # Split the data set into training and validation
     train_size = int(0.9 * len(full_dataset))
     val_size = len(full_dataset) - train_size
     train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size])
-    data_loader = DataLoader(
-        train_dataset, batch_size=hyper_params.batch_size, shuffle=True, drop_last=True,
-    )
 
-    # Instantiate the unet
+    # Instantiate the unet noise prediction model that we are going to train.
     unet = Unet(
         num_time_steps=hyper_params.num_time_steps,
         time_emb_dim=hyper_params.time_embed_dim,
@@ -100,11 +102,8 @@ def main():
         else:
             unet.load_state_dict(input_parameters)
 
-    # Instantiate the model.
-    diffusion = Diffusion(hyper_params.num_time_steps).to(hyper_params.device)
-
     # Instantiate the optimizer.
-    optimizer = torch.optim.AdamW(model.parameters(), lr=hyper_params.learning_rate)
+    optimizer = torch.optim.AdamW(unet.parameters(), lr=hyper_params.learning_rate)
 
     # Should we load existing optimizer state?
     if args.input_optimizer_path:
@@ -120,6 +119,15 @@ def main():
     )
     output_optimizer_path = os.path.abspath(
         os.path.normpath(args.output_optimizer_path)
+    )
+
+    # Instantiate the model responsible for applying noise to images.
+    # This model is not trained (it has no weights).
+    diffusion = Diffusion(hyper_params.num_time_steps).to(hyper_params.device)
+
+    # Instantiate our data loader instance for the training data set.
+    data_loader = DataLoader(
+        train_dataset, batch_size=hyper_params.batch_size, shuffle=True, drop_last=True,
     )
 
     # Begin training.
@@ -139,10 +147,8 @@ def main():
             # Apply noise to images.
             noisy_images, noises = diffusion.add_noise(images, time_steps)
 
-            # Compute noise prediction from noisey images.
-            noise_pred = model(noisy_images, time_steps)
-
-            # Noises pred.
+            # Predict the noise that was just applied, based on the noised image & time step.
+            noise_pred = unet(noisy_images, time_steps)
             loss = F.l1_loss(noises, noise_pred)
 
             # Zero out the gradients
@@ -154,17 +160,17 @@ def main():
             # Update the parameters based on gradients to minimize loss.
             optimizer.step()
 
-            if epoch % 10 == 0 and batch_index % 10 == 0:
+            if batch_index % 10 == 0:
                 print(
                     f"Epoch {epoch} | batch {batch_index}/{len(data_loader)} Loss: {loss.item()} "
                 )
 
                 # Train will yield at checkpoints so we can incrementally save state.
-                torch.save(model.state_dict(), output_parameters_path)
+                torch.save(unet.state_dict(), output_parameters_path)
                 torch.save(optimizer.state_dict(), output_optimizer_path)
 
     # Train will yield at checkpoints so we can incrementally save state.
-    torch.save(model.state_dict(), output_parameters_path)
+    torch.save(unet.state_dict(), output_parameters_path)
     torch.save(optimizer.state_dict(), output_optimizer_path)
 
 

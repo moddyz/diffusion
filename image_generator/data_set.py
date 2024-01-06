@@ -5,13 +5,11 @@ from torchvision.transforms import Compose, ToTensor
 import datasets
 
 
-class PoloClubDiffusionDBDataSet(torch.utils.data.Dataset):
-    """A simple wrapper around the PoloClub Diffusion DB data set."""
+class HuggingFaceImageDataSet(torch.utils.data.Dataset):
+    """A simple torch Dataset wrapper around a Hugging Face image-based data set."""
 
-    def __init__(self, transform=None):
-        self._hf_dataset = datasets.load_dataset(
-            "poloclub/diffusiondb", "large_random_1k"
-        )["train"]
+    def __init__(self, hf_dataset: datasets.DatasetDict, transform=None):
+        self._hf_dataset = hf_dataset
 
         if transform:
             self._transform = transform
@@ -28,4 +26,4 @@ class PoloClubDiffusionDBDataSet(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         item = self._hf_dataset[idx]
         image = self._transform(item["image"])
-        return image, item["prompt"]
+        return image, item["label"]

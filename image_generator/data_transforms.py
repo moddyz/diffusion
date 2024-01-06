@@ -10,6 +10,7 @@ def get_image_to_tensor_transform(size):
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),  # Scales values to [0, 1]
             transforms.Lambda(lambda t: (t * 2) - 1),  # Scales values to [-1, 1]
+            transforms.Lambda(lambda t: t[:3, :, :]),  # Removes alpha channel.
         ]
     )
 

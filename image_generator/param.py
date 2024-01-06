@@ -33,7 +33,7 @@ class HyperParameters:
     image_size: Tuple[int, int] = (64, 64)
 
     """The learning rate"""
-    learning_rate: float = 3e-4
+    learning_rate: float = 3e-5
 
     """Total number of time steps for the diffusion process,
     which takes an input image all the way to pure gaussian noise."""
