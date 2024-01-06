@@ -6,6 +6,10 @@ import torch.nn.functional as F
 class Diffusion(nn.Module):
     """Model which gradually adds or subtracts Gaussian noise from an image.
 
+    Although this model won't be "trained" since it has no parameters, the advantage
+    of subclassing nn.Module is so we can call .to(device) on it which will upload & execute its
+    buffers on the designated device (e.g. CUDA).
+
     Reference:
         https://www.assemblyai.com/blog/minimagen-build-your-own-imagen-text-to-image-model
 
