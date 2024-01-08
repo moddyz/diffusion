@@ -14,10 +14,18 @@ Experimentation with Diffusion based neural networks referencing various online 
 ```conda
 git clone https://github.com/moddyz/diffusion_pytorch.git
 cd diffusion_pytorch
-conda env create -f environment.yml
-conda activate diffusion_pytorch
+
+# To create the environment for running on CPU
+conda env create -f environment_cpu.yml
+conda activate diffusion_pytorch_cpu
+
+# For CUDA
+conda env create -f environment_cuda.yml
+conda activate diffusion_pytorch_cuda
 ```
 
-## Execute training
+# Experiments
+
+1. [image_generator](./image_generator): Trains on a set of images then generates new images of trained characteristics.
 
 

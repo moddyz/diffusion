@@ -54,7 +54,7 @@ def main():
     unet.eval()
 
     if args.input_parameters_path:
-        input_parameters = torch.load(args.input_parameters_path)
+        input_parameters = torch.load(args.input_parameters_path, map_location=hyper_params.device)
         unet.load_state_dict(input_parameters)
 
     diffusion = Diffusion(hyper_params.num_time_steps).to(hyper_params.device)

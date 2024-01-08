@@ -1,0 +1,11 @@
+name: diffusion_pytorch_cpu
+channels:
+  - pytorch
+  - defaults
+dependencies:
+  - pytorch=2.1.2
+  - torchvision==0.16.2
+  - datasets==2.12.0
+  - fsspec==2023.9.2
+  - scipy==1.11.4
+  - matplotlib==3.8.0
